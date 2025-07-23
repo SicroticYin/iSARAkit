@@ -10,26 +10,25 @@ from telegram.ext import (
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
 app = Flask(__name__)
-
-# Create Application instance WITHOUT polling or updater
 application = Application.builder().token(TOKEN).build()
 
-# /start command
+# Define /start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello from iSARAdev bot! 🪄 Hosted on Render.")
 
 application.add_handler(CommandHandler("start", start))
 
-# Webhook endpoint
+# Flask route for webhook
 @app.post(f"/{TOKEN}")
-async def handle_update():
+async def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
     await application.process_update(update)
-    return "OK"
+    return "ok"
 
+# Default route to test server
 @app.get("/")
 def index():
-    return "Bot is running!"
+    return "iSARAdev bot is running."
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(port=5000)
