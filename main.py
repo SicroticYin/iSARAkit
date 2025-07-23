@@ -1,29 +1,39 @@
 import os
 from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import Dispatcher, CommandHandler
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+)
 
+# Load environment variable
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
+# Create Flask app
 app = Flask(__name__)
-bot = Bot(token=TOKEN)
-dispatcher = Dispatcher(bot=bot, update_queue=None, workers=0, use_context=True)
 
-def start(update, context):
-    update.message.reply_text("Hello! I'm alive and hosted on Render! 🚀")
+# Define the command handler
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello! I’m alive and hosted on Render! 🚀")
 
-start_handler = CommandHandler("start", start)
-dispatcher.add_handler(start_handler)
+# Create Application instance (new way to handle Telegram bot)
+application = Application.builder().token(TOKEN).build()
+application.add_handler(CommandHandler("start", start))
 
-@app.route("/")
-def home():
-    return "Bot is running!"
-
+# Set up webhook endpoint
 @app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+async def webhook() -> str:
+    """Webhook endpoint that receives updates from Telegram"""
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    await application.process_update(update)
     return "OK"
 
+# Health check route
+@app.route("/")
+def health_check():
+    return "Bot is running!"
+
+# Start Flask server
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(port=5000)
