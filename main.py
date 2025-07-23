@@ -7,33 +7,29 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# Load environment variable
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
-# Create Flask app
 app = Flask(__name__)
 
-# Define the command handler
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! I’m alive and hosted on Render! 🚀")
-
-# Create Application instance (new way to handle Telegram bot)
+# Create Application instance WITHOUT polling or updater
 application = Application.builder().token(TOKEN).build()
+
+# /start command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello from iSARAdev bot! 🪄 Hosted on Render.")
+
 application.add_handler(CommandHandler("start", start))
 
-# Set up webhook endpoint
-@app.route(f"/{TOKEN}", methods=["POST"])
-async def webhook() -> str:
-    """Webhook endpoint that receives updates from Telegram"""
+# Webhook endpoint
+@app.post(f"/{TOKEN}")
+async def handle_update():
     update = Update.de_json(request.get_json(force=True), application.bot)
     await application.process_update(update)
     return "OK"
 
-# Health check route
-@app.route("/")
-def health_check():
+@app.get("/")
+def index():
     return "Bot is running!"
 
-# Start Flask server
 if __name__ == "__main__":
-    app.run(port=5000)
+    app.run(host="0.0.0.0", port=5000)
